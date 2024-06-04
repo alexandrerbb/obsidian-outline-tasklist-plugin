@@ -26,18 +26,17 @@ export const TaskList = (): TaskListInterface => {
   };
 
   const parseOutline = function (makdownContent: string): void {
-    const lines = makdownContent
+    makdownContent
       .split(/\r?\n/)
-      .filter((line) => line && line.startsWith("#"));
-
-    for (const line of lines) {
-      const taskLevel = (line.match(/^#+/) as RegExpMatchArray)[0].length;
-      const parent = getParentTask(taskLevel);
-      const treeLevel = parent ? parent.treeLevel + 1 : 0;
-      tasks.push(
-        Task(line.replace(/^#+\s*/, ""), taskLevel, treeLevel, parent),
-      );
-    }
+      .filter((line) => line && line.startsWith("#"))
+      .forEach((line) => {
+        const taskLevel = (line.match(/^#+/) as RegExpMatchArray)[0].length;
+        const parent = getParentTask(taskLevel);
+        const treeLevel = parent ? parent.treeLevel + 1 : 0;
+        tasks.push(
+          Task(line.replace(/^#+\s*/, ""), taskLevel, treeLevel, parent),
+        );
+      });
   };
 
   const toMarkdown = () => tasks.map((task) => task.toMarkdown()).join("\r\n");
