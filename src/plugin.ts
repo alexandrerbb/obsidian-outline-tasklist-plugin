@@ -16,12 +16,6 @@ interface OutlineTaskListPluginSettings {
   maxNoteCreationReties: number;
 }
 
-interface PluginEditorCallbackParameters {
-  editor: Editor;
-  file: TFile;
-  tasks: TaskListInterface;
-}
-
 const DEFAULT_SETTINGS: OutlineTaskListPluginSettings = {
   maxNoteCreationReties: 200,
 };
@@ -35,17 +29,13 @@ export default class OutlineTaskListPlugin extends Plugin {
   /**
    * Create an Obsidian note to store the resulting task list.
    */
-  async createNote(
-    originalName: string,
-    folder: TFolder | null,
-    makdownContent: string,
-  ): Promise<TFile> {
+  async createNote(originalName: string, folder: TFolder | null, makdownContent: string): Promise<TFile> {
     const dirPath = folder === null ? "" : folder.path + "/";
     for (let index = 1; index < this.settings.maxNoteCreationReties; index++) {
       try {
         return await this.app.vault.create(
           dirPath +
-            `${originalName} (task list${index === 1 ? "" : " " + index}).md`,
+          `${originalName} (task list${index === 1 ? "" : " " + index}).md`,
           makdownContent,
         );
       } catch (e) {
@@ -58,13 +48,13 @@ export default class OutlineTaskListPlugin extends Plugin {
   /**
    * Custom editor callback.
    */
-  pluginEditorCallback<T = unknown>(
-    callback: ({ editor, file, tasks }: PluginEditorCallbackParameters) => T,
+  static callback<T>(
+    callback: ({ editor, file, tasks }: { editor: Editor; file: TFile; tasks: TaskListInterface; }) => T,
   ): (editor: Editor, view: MarkdownView) => T {
     return (editor: Editor, view: MarkdownView) => {
       const file = view.file;
       if (!file) {
-        throw Error("Cannot find the opened note.");
+        throw Error("Cannot find the current note.");
       }
       const tasks = TaskList();
       tasks.parseOutline(editor.getValue());
@@ -72,25 +62,25 @@ export default class OutlineTaskListPlugin extends Plugin {
     };
   }
 
-  async onload() {
-    await this.loadSettings();
+  async onload(): Promise<void> {
+    // Load settings.
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+    // Add commands.
     this.addCommand({
-      id: "outline-task-list-insert",
       name: "Convert outline to a task list here.",
-      editorCallback: this.pluginEditorCallback(({ editor, tasks }) => {
+      id: "outline-task-list-insert",
+      editorCallback: OutlineTaskListPlugin.callback(({ editor, tasks }) => {
         editor.replaceRange(tasks.toMarkdown(), editor.getCursor());
       }),
     });
     this.addCommand({
-      id: "outline-task-list-new-note",
       name: "Convert outline to a task list in a new note.",
-      editorCallback: this.pluginEditorCallback(async ({ file, tasks }) => {
+      id: "outline-task-list-new-note",
+      editorCallback: OutlineTaskListPlugin.callback(async ({ file, tasks }) => {
+        // Create a new note.
         await this.createNote(file.basename, file.parent, tasks.toMarkdown());
       }),
     });
-  }
-
-  async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 }
