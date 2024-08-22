@@ -10,14 +10,14 @@ import {
   type TFile,
   type TFolder,
 } from "obsidian";
-import { TaskList, TaskListInterface } from "src/taskList";
+import { TaskList } from "src/taskList";
 
 interface OutlineTaskListPluginSettings {
-  maxNoteCreationReties: number;
+  maxNoteCreateTries: number;
 }
 
 const DEFAULT_SETTINGS: OutlineTaskListPluginSettings = {
-  maxNoteCreationReties: 200,
+  maxNoteCreateTries: 50,
 };
 
 export default class OutlineTaskListPlugin extends Plugin {
@@ -29,9 +29,11 @@ export default class OutlineTaskListPlugin extends Plugin {
   /**
    * Create an Obsidian note to store the resulting task list.
    */
-  async createNote(originalName: string, folder: TFolder | null, makdownContent: string): Promise<TFile> {
+  async createNote(
+    originalName: string, folder: TFolder | null, makdownContent: string
+  ): Promise<TFile> {
     const dirPath = folder === null ? "" : folder.path + "/";
-    for (let index = 1; index < this.settings.maxNoteCreationReties; index++) {
+    for (let index = 1; index < this.settings.maxNoteCreateTries; index++) {
       try {
         return await this.app.vault.create(
           dirPath +
@@ -39,7 +41,8 @@ export default class OutlineTaskListPlugin extends Plugin {
           makdownContent,
         );
       } catch (e) {
-        continue; // File already exists.
+        // File already exists.
+        continue; 
       }
     }
     throw Error("Maximum note creation retries exceeded.");
