@@ -12,11 +12,11 @@ import {
 } from "obsidian";
 import { TaskList } from "src/taskList";
 
-interface OutlineTaskListPluginSettings {
+interface PluginSettings {
   maxNoteCreateTries: number;
 }
 
-const DEFAULT_SETTINGS: OutlineTaskListPluginSettings = {
+const DEFAULT_SETTINGS: PluginSettings = {
   maxNoteCreateTries: 50,
 };
 
@@ -24,7 +24,7 @@ export default class OutlineTaskListPlugin extends Plugin {
   /**
    * Plugin settings.
    */
-  settings: OutlineTaskListPluginSettings;
+  settings: PluginSettings;
 
   /**
    * Create an Obsidian note to store the resulting task list.
