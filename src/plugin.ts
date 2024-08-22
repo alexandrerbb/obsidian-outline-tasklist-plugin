@@ -45,22 +45,22 @@ export default class OutlineTaskListPlugin extends Plugin {
     throw Error("Maximum note creation retries exceeded.");
   }
 
-  /**
-   * Custom editor callback.
-   */
-  static callback<T>(
-    callback: ({ editor, file, tasks }: { editor: Editor; file: TFile; tasks: TaskListInterface; }) => T,
-  ): (editor: Editor, view: MarkdownView) => T {
-    return (editor: Editor, view: MarkdownView) => {
-      const file = view.file;
+  insertEditor(editor : Editor, view : MarkdownView) {
+    const tasks = TaskList();
+    tasks.parseOutline(editor.getValue());
+    editor.replaceRange(tasks.toMarkdown(), editor.getCursor());
+  }
+
+  async insertNewNote(editor : Editor, view: MarkdownView) {
+    const file = view.file;
       if (!file) {
         throw Error("Cannot find the current note.");
       }
-      const tasks = TaskList();
-      tasks.parseOutline(editor.getValue());
-      return callback({ editor, file, tasks });
-    };
+    const tasks = TaskList();
+    tasks.parseOutline(editor.getValue());
+    await this.createNote(file.basename, file.parent, tasks.toMarkdown());
   }
+
 
   async onload(): Promise<void> {
     // Load settings.
@@ -70,17 +70,12 @@ export default class OutlineTaskListPlugin extends Plugin {
     this.addCommand({
       name: "Convert outline to a task list here.",
       id: "outline-task-list-insert",
-      editorCallback: OutlineTaskListPlugin.callback(({ editor, tasks }) => {
-        editor.replaceRange(tasks.toMarkdown(), editor.getCursor());
-      }),
+      editorCallback: this.insertEditor,
     });
     this.addCommand({
       name: "Convert outline to a task list in a new note.",
       id: "outline-task-list-new-note",
-      editorCallback: OutlineTaskListPlugin.callback(async ({ file, tasks }) => {
-        // Create a new note.
-        await this.createNote(file.basename, file.parent, tasks.toMarkdown());
-      }),
+      editorCallback: this.insertNewNote,
     });
   }
 }
